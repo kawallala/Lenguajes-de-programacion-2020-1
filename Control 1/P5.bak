@@ -1,0 +1,6 @@
+#lang play
+(define (curry/2 f)
+  (lambda (x) (lambda (y) (f x y))))
+
+(define (uncurry/2 f)
+  (lambda (x y) ((f x) y)))

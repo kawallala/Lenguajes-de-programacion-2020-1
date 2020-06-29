@@ -1,0 +1,97 @@
+#lang play
+#|
+1.Arboles Binarios
+a)
+|#
+(deftype BinTree
+  (leaf val)
+  (node l val r))
+
+;b)
+#|
+ map-bt : ( A -> B ) x BinTree[A] -> BinTree[B]
+|#
+(define (map-bt f bt)
+  (match bt
+    [(leaf val) (leaf (f val))]
+    [(node l val r) (node (map-bt f l) (f val) (map-bt f r))]))
+
+#|
+ fold-bt: ( Leaf -> B ) x
+          (B x Node x B -> B) x
+           BinTree[leaf node] -> B
+|#
+(define (fold-bt fleaf fnode bt)
+  (match bt
+    [(leaf val) (fleaf val)]
+    [(node l val r) (fnode
+                     (fold-bt fleaf fnode l)
+                     val
+                     (fold-bt fleaf fnode r))]))
+;c)
+#|
+BinTree-full? : Any -> Boolean
+|#
+(define (BinTree-full? bt)
+  (match bt
+    [(leaf val) #t]
+    [(node l val r) (and (BinTree-full? l) (BinTree-full? r))]
+    [_ #f]))
+;d)
+#|
+BinTree-full-pred? : (Any -> Boolean) x Any -> Boolean
+|#
+(define (BinTree-full-pred? p bt)
+  (match bt
+    [(leaf val) (p t)]
+    [(node l val r) (and (p val) (BinTree-full? l) (BinTree-full? r))]
+    [_ #f]))
+
+(define t (node (leaf 5) 7 (node (leaf 3) 42 (leaf -1))))
+
+(test (map-bt add1 t) (node (leaf 6) 8 (node (leaf 4) 43 (leaf 0))))
+
+(test (fold-bt list (lambda (l v r)
+                      (append l (list v) r)) t) '(5 7 3 42 -1))
+(test (BinTree-full? t) #t)
+
+
+;----------------------------------------
+
+
+;2. Manipulación de AST
+; a)
+(deftype Expr
+  (num n)
+  (binop op l r))
+
+; op '(+ - / *)
+(binop '+ (num 3) (num 4))
+;'{+ 3 4}
+(define operaciones '(+ - / *))
+
+
+;b)
+#|
+  parse: s-expr -> Expr
+|#
+(define (parse sexpr)
+  (define (operacion? op) (member op operaciones))
+  (match sexpr
+    [(? number? val) (num val)]
+    [(list (? operacion? op) l r) (binop op (parse l) (parse r))]))
+
+;c)
+
+;d)
+#|
+opt : Expr -> Expr
+|#
+(define (opt expr)
+  (match expr
+    [(num _) expr]
+    [(binop '+ 0 r) r]
+    [(binop '+ l 0) l]
+    [(binop '* 1 r) r]
+    [(binop '* l 1) l]
+    [(binop op l r) (binop op (opt l) (opt r))]))

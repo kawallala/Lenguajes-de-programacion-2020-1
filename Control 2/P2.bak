@@ -1,0 +1,31 @@
+#lang play
+#|
+2.a) El problema de este interprete es que, al momento de interpretar la expresion donde se aplica la
+     funcion (e) se esta usando el store con el que se llamo al interprete, y no el store generado por
+     la interpretacion de la funcion a usarse (f-sto) esto producira que cambios producidos en el store
+     mediante la funcion no sean detectados por la interpretacion de la expresion
+     Un programa que ilustra este problema es el siguiente:
+|#
+'{with {redn {fun {n} {fun {m} {- n m}}}}
+       {{redn 10} 2}}
+             
+#|
+El resultado de este programa es 0, puesto que el setbox no es capaz de modificar el store
+La solucion propuesta es que en la interpretacion de la expresion "e" se utilize el f-sto
+en vez de sto
+2.b) Un programa para ver el uso de call-by-value o call-by-reference sera uno donde se intente
+     dentro de una funcion modificar un valor que sera ocupado fuera de esta
+|#
+'{with {y 0}
+       {with {f {fun {x}
+                     {set x 10}}}
+             {seqn {f y}
+                   {+ y y}}}}
+#|
+En este programa, si estamos ocupando call-by-value el resultado sera 0, puesto que en la funcion
+f se crea una copia de la direccion de "y", entonces las modificaciones que se realizen a la
+variable seran solamente dentro del scope de la funcion, en cambio, si realizamos call-by-reference
+tendriamos como resultado 20, puesto que se pudo modificar las
+|#
+
+            

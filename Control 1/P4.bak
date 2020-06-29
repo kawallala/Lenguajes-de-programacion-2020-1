@@ -1,0 +1,5 @@
+#lang play
+(define (sumatoria a f b)
+  (if (> a b)
+      0
+      (f a) + (sumatoria a+1 f b)))

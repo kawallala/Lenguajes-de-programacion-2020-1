@@ -1,0 +1,12 @@
+#lang play
+(define (sumatoria a f b)
+  (if (> a b)
+      0
+      (+ (f a) (sumatoria (+ a 1) f b))))
+
+(define (numero-perfecto? n [k 1] [t 0])
+  (if (equal? k n)
+      (equal? n t)
+      (if (divides? k n)
+          (numero-perfecto? n (+ k 1) (+ t k))
+          (numero-perfecto? n (+k 1) (+ t k)))))

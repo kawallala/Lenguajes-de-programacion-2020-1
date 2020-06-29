@@ -1,0 +1,8 @@
+#lang play
+#|
+a) esta frase no es correcta, ya que las funciones en C sonj punteros que apuntan a la posicion de la funcion
+en memoria, pero la funcion en si no existe para el programa
+b) El problema de scope dinamico es que existen multiples circumstancias donde los valores de los identificadores
+pueden ser cambiados, por ende, se pueden generar cambios no esperadoes en el programa, sin embargo, puede ser util
+para archivos de configuracion, donde una funcion puede cambiar la configuracion de las siguientes
+|#

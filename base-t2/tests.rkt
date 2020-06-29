@@ -1,0 +1,263 @@
+#lang play
+
+(require "main.rkt")
+(print-only-errors #t)
+
+;; Test sub-module.
+;; See http://blog.racket-lang.org/2012/06/submodules.html
+
+;this tests should never fail; these are tests for MiniScheme+
+(module+ test
+  (test (run '{+ 1 1}) 2)
+
+  (test (run '{{fun {x y z} {+ x y z}} 1 2 3}) 6)
+
+  (test (run '{< 1 2}) #t)
+
+  (test (run '{local {{define x 1}}
+                x}) 1)
+
+  (test (run '{local {{define x 2}
+                      {define y {local {{define x 1}} x}}}
+                {+ x x}}) 4)
+
+  ;; datatypes
+  (test (run '{local {{datatype List {Empty} {Cons a b}}} {List? {Empty}}}) #t)
+
+  (test (run '{local {{datatype List {Empty} {Cons a b}}} {Empty? {Empty}}}) #t)
+
+  (test (run '{local {{datatype List {Empty} {Cons a b}}} {List? {Cons 1 2}}}) #t)
+
+  (test (run '{local {{datatype List {Empty} {Cons a b}}} {Cons? {Cons 1 2}}}) #t)
+
+  (test (run '{local {{datatype List {Empty} {Cons a b}}} {Empty? {Cons 1 2}}})
+        #f)
+
+  (test (run '{local {{datatype List {Empty} {Cons a b}}} {Empty? {Empty}}}) #t)
+
+  (test (run '{local {{datatype List {Empty} {Cons a b}}} {Cons? {Empty}}})
+        #f)
+
+  ;; match
+  (test (run '{match 1 {case 1 => 2}}) 2)
+
+  (test (run '{match 2
+                {case 1 => 2}
+                {case 2 => 3}})
+        3)
+
+  (test (run '{match #t {case #t => 2}}) 2)
+
+  (test (run '{match #f
+                {case #t => 2}
+                {case #f => 3}})
+        3)
+
+  (test (run '{local {{datatype Nat
+                                {Zero}
+                                {Succ n}}
+                      {define pred {fun {n}
+                                        {match n
+                                          {case {Zero} => {Zero}}
+                                          {case {Succ m} => m}}}}}
+                {Succ? {pred {Succ {Succ {Zero}}}}}})
+        #t)
+  (test (run '{local {{datatype Nat
+                                {Zero}
+                                {Succ n}}
+                      {define pred {fun {n}
+                                        {match n
+                                          {case {Zero} => {Zero}}
+                                          {case {Succ m} => m}}}}}
+                {Succ? {pred {Succ {Succ {Zero}}}}}}) #t))
+
+;tests for extended MiniScheme+
+(module+ sanity-tests
+    (test (run '{local {{datatype Nat
+                  {Zero}
+                  {Succ n}}
+                {define pred {fun {n}
+                               {match n
+                                 {case {Zero} => {Zero}}
+                                 {case {Succ m} => m}}}}}
+          {pred {Succ {Succ {Zero}}}}}) "{Succ {Zero}}")
+
+(test (run
+ `{local ,stream-lib
+          {local {,ones ,stream-take}
+            {stream-take 11 ones}}}) "{list 1 1 1 1 1 1 1 1 1 1 1}")
+
+(test (run `{local ,stream-lib
+          {local {,stream-zipWith ,fibs}
+            {stream-take 10 fibs}}}) "{list 1 1 2 3 5 8 13 21 34 55}")
+
+(test (run `{local ,stream-lib
+          {local {,ones ,stream-zipWith}
+            {stream-take 10
+                         {stream-zipWith
+                          {fun {n m}+
+                               {+ n m}}
+                          ones
+                          ones}}}})  "{list 2 2 2 2 2 2 2 2 2 2}")
+(test
+(run `{local ,stream-lib
+               {local {,stream-take ,merge-sort ,fibs ,stream-zipWith}
+                 {stream-take 10 {merge-sort fibs fibs}}}})   "{list 1 1 1 1 2 2 3 3 5 5}"))
+
+;test for pretty-printing
+(test (run '{local {{datatype Nat 
+                  {Zero} 
+                  {Succ n}
+                  {Pred m n}}
+                {define pred {fun {n} 
+                               {match n
+                                 {case {Zero} => {Zero}}
+                                 {case {Succ m} => m}
+                                 {case {Pred m n} => m}}}}}
+          {pred {Pred {Pred {Succ {Zero}} {Zero}} {Zero}}}})
+      "{Pred {Succ {Zero}} {Zero}}")
+
+(test (run '{local {{datatype Nat 
+                  {Zero} 
+                  {Succ n}}
+                {define pred {fun {n} 
+                               {match n
+                                 {case {Zero} => {Zero}}
+                                 {case {Succ m} => m}}}}}
+          {pred {Succ {Succ {Succ {Zero}}}}}})
+      "{Succ {Succ {Zero}}}")
+
+(test (run '{Empty? {Empty}})
+      #t)
+
+(test (run '{List? {Cons 1 2}})
+      #t)
+
+(test (run '{length {Cons 1 {Cons 2 {Cons 3 {Empty}}}}})
+      3)
+
+(test (run '{match {list {+ 1 1} 4 6}
+          {case {Cons h r} => h}
+          {case _ => 0}})
+      2)
+
+(test (run '{match {list}
+          {case {Cons h r} => h}
+          {case _ => 0}})
+      0)
+
+(test (run '{match {list 2 {list 4 5} 6}
+              {case {list a b c d} => a}          
+              {case {list a {list b c} d} => c}})
+      5)
+
+(test (run '{list 1 4 6})
+      "{list 1 4 6}")
+
+(test (run '{list {list 1} {list 2} {list 3}})
+           "{list {list 1} {list 2} {list 3}}")
+
+(test (run '{list})
+      "{list}")
+
+(test (run '{{fun {x  {lazy y}} x} 1 {/ 1 0}})
+      1)
+
+(test/exn (run '{{fun {x  y} x} 1 {/ 1 0}})
+"/: division by zero")
+
+(test/exn (run '{local {{define x {/ 1 0}}}
+                  x})
+          "/: division by zero")
+
+(test (run '{local {{datatype T 
+                  {C {lazy a}}}
+                {define x {C {/ 1 0}}}}
+          {T? x}})
+      #t)
+
+(test/exn (run '{local {{datatype T 
+                  {C {lazy a}}}
+                {define x {C {/ 1 0}}}}
+          {match x
+            {case {C a} => a}}})
+"/: division by zero")
+
+(test (run '{local {{datatype T 
+                  {C {lazy a}}}
+                {define x {C {/ 1 0}}}}
+          {C? x}})
+      #t)
+
+(test (run '{local {{datatype T
+                              {C a {lazy b}}}}
+              {C {C 1 {C 1 2}} {C 1 2}}})
+      "{C {C 1 {C 1 2}} {C 1 2}}")
+
+(test (run '{local {{datatype T {C a {lazy b}}}
+                {define x {C  0 {+ 1 2}}}}
+               x})
+      "{C 0 3}")
+
+(test (run `{local {,stream-data ,make-stream ,stream-hd ,ones}
+{stream-hd ones}})
+      1)
+
+(test (run `{local {,stream-data ,make-stream
+                             ,stream-hd ,stream-tl ,ones}
+          {stream-hd {stream-tl ones}}})
+1)
+
+(test (run `{local ,stream-lib
+          {local {,ones ,stream-take}
+            {stream-take 10 ones}}})
+"{list 1 1 1 1 1 1 1 1 1 1}")
+
+(test (run `{local ,stream-lib
+          {local {,ones ,stream-zipWith}
+            {stream-take 10
+                         {stream-zipWith
+                          {fun {n m}
+                               {+ n m}}
+                          ones
+                          ones}}}})
+"{list 2 2 2 2 2 2 2 2 2 2}")
+
+(test (run `{local ,stream-lib
+          {local {,ones ,stream-zipWith}
+            {stream-take 10
+                         {stream-zipWith
+                          {fun {n m}
+                               {- n m}}
+                          ones
+                          ones}}}})
+"{list 0 0 0 0 0 0 0 0 0 0}")
+
+(test (run `{local ,stream-lib
+          {local {,ones ,stream-zipWith}
+            {stream-take 10
+                         {stream-zipWith
+                          {fun {n m}
+                               {+ n m}}
+                          {stream-zipWith
+                           {fun {n m}
+                                {+ n m}}
+                           ones
+                           ones}
+                          ones}}}})
+"{list 3 3 3 3 3 3 3 3 3 3}")
+
+(test (run `{local ,stream-lib
+          {local {,stream-zipWith ,fibs}
+            {stream-take 10 fibs}}})
+"{list 1 1 2 3 5 8 13 21 34 55}")
+
+(test (run `{local ,stream-lib
+               {local {,stream-take ,merge-sort ,fibs ,stream-zipWith}
+                 {stream-take 10 {merge-sort fibs fibs}}}})
+"{list 1 1 1 1 2 2 3 3 5 5}")
+
+(test (run `{local ,stream-lib
+               {local {,stream-take ,merge-sort ,fibs ,stream-zipWith ,ones}
+                 {stream-take 10 {merge-sort ones fibs}}}})
+"{list 1 1 1 1 1 1 1 1 1 1}")

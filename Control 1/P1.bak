@@ -1,0 +1,2 @@
+#lang play
+(deftype formula
